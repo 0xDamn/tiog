@@ -6,6 +6,7 @@ mod output;
 mod query;
 mod redact;
 mod risk;
+mod selflog;
 
 #[tokio::main]
 async fn main() {

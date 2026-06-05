@@ -62,6 +62,9 @@ impl Cli {
         let question = self.query.join(" ");
         let suggestion = crate::query::run(&cfg, &question).await?;
         crate::output::render(&suggestion, self.json);
+        if !self.json {
+            crate::selflog::record(&crate::output::suggestion_lines(&suggestion));
+        }
 
         Ok(if self.shell {
             shell_exit_code(&cfg, &suggestion)

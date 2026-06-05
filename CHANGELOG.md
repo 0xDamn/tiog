@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format loosely foll
 
 ## [Unreleased]
 
+### Fixed
+- Vague follow-ups ("teach me more", "again") no longer repeat the previous answer. tiog now
+  records its own output and strips it from future captured context, and asks for specifics
+  (via `needs`) when a request has no concrete target — it has no conversation memory.
+
 ## [0.1.0] - 2026-06-05
 
 Initial release.

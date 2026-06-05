@@ -26,6 +26,16 @@ pub fn build(cfg: &Config) -> TermContext {
     if let Some(activity) = resolve(&cfg.context.source).collect(cfg.context.history_lines) {
         let _ = write!(text, "\n{activity}");
     }
+    // Drop tiog's own recent output so it doesn't see — and parrot — its previous answers
+    // (e.g. on vague follow-ups like "teach me more").
+    let own = crate::selflog::recent_set();
+    if !own.is_empty() {
+        text = text
+            .lines()
+            .filter(|line| !own.contains(line.trim()))
+            .collect::<Vec<_>>()
+            .join("\n");
+    }
     TermContext { text }
 }
 

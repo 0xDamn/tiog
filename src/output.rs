@@ -49,3 +49,40 @@ pub fn render(s: &Suggestion, as_json: bool) {
     }
     println!("{}", s.command);
 }
+
+/// The human-visible lines tiog emits for a suggestion. Recorded (see `crate::selflog`) so
+/// they can be stripped from future captured context, preventing tiog from parroting its
+/// own previous answers.
+pub fn suggestion_lines(s: &Suggestion) -> Vec<String> {
+    let mut lines = Vec::new();
+    if !s.explanation.trim().is_empty() {
+        lines.extend(s.explanation.lines().map(str::to_string));
+    }
+    for alt in &s.alternatives {
+        lines.push(format!("alt: {alt}"));
+    }
+    if !s.command.trim().is_empty() {
+        lines.extend(s.command.lines().map(str::to_string));
+    }
+    lines
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn suggestion_lines_cover_explanation_alts_command() {
+        let s = Suggestion {
+            command: "ls -la".into(),
+            explanation: "list everything".into(),
+            alternatives: vec!["exa -la".into()],
+            risk: "none".into(),
+            needs: None,
+        };
+        let lines = suggestion_lines(&s);
+        assert!(lines.contains(&"list everything".to_string()));
+        assert!(lines.contains(&"alt: exa -la".to_string()));
+        assert!(lines.contains(&"ls -la".to_string()));
+    }
+}
