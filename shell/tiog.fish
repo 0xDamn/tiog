@@ -83,7 +83,7 @@ function __tiog_hotkey --description 'tiog: suggest a command from the current l
         set_color normal
     end
 
-    # rc: 0 = paste only, 10 = paste and auto-run, anything else = error (keep the query)
+    # rc: 0 = paste command, 10 = paste and auto-run command, 20 = text result, anything else = error
     if test $rc -eq 0 -o $rc -eq 10
         if test -n "$cmd"
             commandline -r -- $cmd # paste the command; user reviews, then Enter
@@ -91,6 +91,10 @@ function __tiog_hotkey --description 'tiog: suggest a command from the current l
                 commandline -f execute # auto_run=safe and risk=none: run it
                 return
             end
+        end
+    else if test $rc -eq 20
+        if test -n "$cmd"
+            printf '%s\n' $cmd
         end
     end
     commandline -f repaint

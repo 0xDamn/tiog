@@ -31,6 +31,41 @@ fences) using these keys: \"command\" (string), \"explanation\" (string), \"alte
 (array of strings, optional), \"risk\" (one of \"none\", \"caution\", \"destructive\"), \
 \"needs\" (string, optional — set when no command is possible).";
 
+pub const ROUTER_SYSTEM: &str = "\
+You are tiog's request router. Choose the best plugin for the user's request.
+
+Use only the plugin names listed in the plugin catalog. Prefer the command plugin for ambiguous
+requests because tiog is primarily a terminal command assistant. Return a confidence from 0.0 to
+1.0, a brief reason, and a normalized request for the selected plugin.";
+
+pub const ROUTER_JSON_FORMAT: &str = "Respond with ONLY a single JSON object using these keys: \
+\"plugin\" (string), \"confidence\" (number from 0.0 to 1.0), \"reason\" (string), \
+\"normalized_request\" (string).";
+
+pub const TEXT_JSON_FORMAT: &str = "Respond with ONLY a single JSON object using these keys: \
+\"text\" (string), \"explanation\" (one short line), \"needs\" (string, optional — set when no \
+answer is possible).";
+
 pub fn user_message(question: &str, context: &str) -> String {
     format!("# Terminal context\n{context}\n# Request\n{question}")
+}
+
+pub fn router_message(question: &str, catalog: &str) -> String {
+    format!("# Plugin catalog\n{catalog}\n# Request\n{question}")
+}
+
+pub fn text_plugin_system(plugin_prompt: &str) -> String {
+    format!(
+        "{}\n\nReturn a text answer for stdout and a short explanation for stderr.\n\n{}",
+        plugin_prompt.trim(),
+        TEXT_JSON_FORMAT
+    )
+}
+
+pub fn text_plugin_user_message(question: &str, context: &str) -> String {
+    if context.trim().is_empty() {
+        format!("# Request\n{question}")
+    } else {
+        format!("# Context\n{context}\n# Request\n{question}")
+    }
 }

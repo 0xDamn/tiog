@@ -6,6 +6,7 @@
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Default, Deserialize)]
@@ -14,6 +15,8 @@ pub struct Config {
     pub model: Model,
     pub context: ContextCfg,
     pub behavior: Behavior,
+    pub router: Router,
+    pub plugins: BTreeMap<String, Plugin>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,6 +40,25 @@ pub struct ContextCfg {
 #[serde(default)]
 pub struct Behavior {
     pub auto_run: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(default)]
+pub struct Router {
+    pub enabled: bool,
+    pub default_plugin: String,
+    pub min_confidence: f32,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct Plugin {
+    pub description: String,
+    pub output: String,
+    pub include_context: bool,
+    pub include_conversation: bool,
+    pub system_prompt: String,
+    pub builtin: bool,
 }
 
 impl Default for Model {
@@ -64,6 +86,29 @@ impl Default for Behavior {
     fn default() -> Self {
         Self {
             auto_run: "off".into(),
+        }
+    }
+}
+
+impl Default for Router {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            default_plugin: "command".into(),
+            min_confidence: 0.55,
+        }
+    }
+}
+
+impl Default for Plugin {
+    fn default() -> Self {
+        Self {
+            description: String::new(),
+            output: "text".into(),
+            include_context: false,
+            include_conversation: false,
+            system_prompt: String::new(),
+            builtin: false,
         }
     }
 }
@@ -101,4 +146,49 @@ impl Config {
             )
         })
     }
+
+    pub fn plugin(&self, name: &str) -> Option<Plugin> {
+        self.plugins
+            .get(name)
+            .cloned()
+            .or_else(|| builtin_plugin(name))
+    }
+
+    pub fn available_plugins(&self) -> BTreeMap<String, Plugin> {
+        let mut plugins = builtin_plugins();
+        plugins.extend(self.plugins.clone());
+        plugins
+    }
+}
+
+fn builtin_plugins() -> BTreeMap<String, Plugin> {
+    BTreeMap::from([
+        (
+            "command".into(),
+            Plugin {
+                description: "Suggest one shell command for the user's terminal task.".into(),
+                output: "command".into(),
+                include_context: true,
+                include_conversation: true,
+                system_prompt: String::new(),
+                builtin: true,
+            },
+        ),
+        (
+            "translator".into(),
+            Plugin {
+                description: "Translate text between human languages.".into(),
+                output: "text".into(),
+                include_context: false,
+                include_conversation: false,
+                system_prompt: "Translate faithfully. Preserve technical terms when appropriate."
+                    .into(),
+                builtin: true,
+            },
+        ),
+    ])
+}
+
+fn builtin_plugin(name: &str) -> Option<Plugin> {
+    builtin_plugins().remove(name)
 }

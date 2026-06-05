@@ -14,6 +14,14 @@ What makes it more than a chat wrapper: tiog is **bound to your terminal**. It s
 current directory, recent commands, and (inside tmux) their output — so answers are about
 *your* situation, not generic.
 
+tiog can also route requests to prompt/config plugins. The built-in `command` plugin keeps
+the original command-assistant behavior, while the built-in `translator` plugin handles
+context-free translation requests:
+
+```sh
+tiog local state files are written unredacted into Chinese
+```
+
 ```text
 ~/proj > replace all foo with bar in every .txt        [Ctrl-G]
          macOS sed needs '' after -i for in-place edits.
@@ -74,6 +82,40 @@ model:
 ```
 </details>
 
+## Plugins and routing
+
+By default, tiog asks the configured model to route each request to a plugin, then falls back
+to `command` when the route is uncertain. Prompt/config plugins are safe by design: they are
+just descriptions and prompts, not executable code.
+
+```yaml
+router:
+  enabled: true
+  default_plugin: command
+  min_confidence: 0.55
+
+plugins:
+  translator:
+    description: "Translate text between human languages."
+    output: text
+    include_context: false
+    include_conversation: false
+    system_prompt: |
+      Translate faithfully. Preserve technical terms when appropriate.
+```
+
+Text plugins print the short explanation to stderr and the main result to stdout. In the
+fish hotkey, command results still replace the prompt; text results are printed below the
+current prompt and are not injected as shell commands.
+
+Useful plugin flags:
+
+```sh
+tiog --list-plugins
+tiog --plugin translator local state files are written unredacted into Chinese
+tiog --no-context how do I list files by size
+```
+
 Then set the key and ask:
 
 ```sh
@@ -108,7 +150,7 @@ which returns a structured `{command, explanation, risk}`.
 | `hooks` | ❌ commands + exit codes | the fish integration's session log |
 | `auto` *(default)* | best available | — |
 
-Inspect exactly what would be sent, with no API call:
+Inspect the command plugin's terminal context, with no API call:
 
 ```sh
 tiog --show-context

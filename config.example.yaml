@@ -15,3 +15,20 @@ context:
 
 behavior:
   auto_run: "off"                  # "off" | "safe" (hotkey auto-runs risk:none cmds; quote it)
+
+router:
+  enabled: true                    # model-routes requests to plugins; falls back to command
+  default_plugin: command
+  min_confidence: 0.55
+
+# Built-ins exist even when omitted:
+# - command: shell command suggestions, includes terminal context + conversation memory
+# - translator: text translation, context-free by default
+plugins:
+  translator:
+    description: "Translate text between human languages."
+    output: text                   # text | command
+    include_context: false
+    include_conversation: false
+    system_prompt: |
+      Translate faithfully. Preserve technical terms when appropriate.

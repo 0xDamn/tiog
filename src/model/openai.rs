@@ -7,9 +7,10 @@ use anyhow::{Context, Result};
 use serde_json::{json, Value};
 use std::time::Duration;
 
-use crate::config::Config;
+use crate::config::{Config, Plugin};
 use crate::model::prompt;
-use crate::output::Suggestion;
+use crate::model::RouteDecision;
+use crate::output::{Suggestion, TextResponse};
 
 const OPENAI_DEFAULT_URL: &str = "https://api.openai.com/v1";
 
@@ -68,12 +69,105 @@ pub async fn suggest(cfg: &Config, question: &str, context: &str) -> Result<Sugg
     parse_suggestion(content)
 }
 
+pub async fn route(cfg: &Config, question: &str, catalog: &str) -> Result<RouteDecision> {
+    let system = format!(
+        "{}\n\n{}",
+        prompt::ROUTER_SYSTEM,
+        prompt::ROUTER_JSON_FORMAT
+    );
+    let body = json!({
+        "model": cfg.model.name,
+        "messages": [
+            { "role": "system", "content": system },
+            { "role": "user", "content": prompt::router_message(question, catalog) }
+        ],
+        "response_format": { "type": "json_object" },
+        "temperature": 0
+    });
+
+    let content = chat_completion_content(cfg, body).await?;
+    parse_json_content::<RouteDecision>(&content)
+}
+
+pub async fn text_plugin(
+    cfg: &Config,
+    plugin_name: &str,
+    plugin: &Plugin,
+    question: &str,
+    context: &str,
+) -> Result<TextResponse> {
+    let body = json!({
+        "model": cfg.model.name,
+        "messages": [
+            { "role": "system", "content": prompt::text_plugin_system(&plugin.system_prompt) },
+            { "role": "user", "content": prompt::text_plugin_user_message(question, context) }
+        ],
+        "response_format": { "type": "json_object" },
+        "temperature": 0
+    });
+
+    let mut response =
+        parse_json_content::<TextResponse>(&chat_completion_content(cfg, body).await?)?;
+    response.plugin = plugin_name.into();
+    Ok(response)
+}
+
+async fn chat_completion_content(cfg: &Config, body: Value) -> Result<String> {
+    let compatible = cfg.model.provider == "openai-compatible";
+
+    let base = match (&cfg.model.base_url, compatible) {
+        (Some(b), _) => b.trim_end_matches('/').to_string(),
+        (None, false) => OPENAI_DEFAULT_URL.to_string(),
+        (None, true) => anyhow::bail!("openai-compatible requires model.base_url in config"),
+    };
+    let url = format!("{base}/chat/completions");
+
+    // API key: required for openai, optional for openai-compatible (local servers).
+    let key = std::env::var(&cfg.model.api_key_env).ok();
+    if key.is_none() && !compatible {
+        anyhow::bail!(
+            "API key not found in ${} — set it, or change model.api_key_env in config",
+            cfg.model.api_key_env
+        );
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .build()
+        .context("building HTTP client")?;
+
+    let mut req = client.post(&url).json(&body);
+    if let Some(k) = key {
+        req = req.bearer_auth(k);
+    }
+    let resp = req.send().await.context("calling OpenAI API")?;
+
+    let status = resp.status();
+    let text = resp.text().await.context("reading OpenAI response")?;
+    if !status.is_success() {
+        anyhow::bail!("OpenAI API error {status}: {text}");
+    }
+
+    let v: Value = serde_json::from_str(&text).context("parsing OpenAI response")?;
+    let content = v["choices"][0]["message"]["content"]
+        .as_str()
+        .context("OpenAI response missing choices[0].message.content")?;
+    Ok(content.to_string())
+}
+
 fn parse_suggestion(content: &str) -> Result<Suggestion> {
-    if let Ok(s) = serde_json::from_str::<Suggestion>(content.trim()) {
+    parse_json_content(content)
+}
+
+fn parse_json_content<T>(content: &str) -> Result<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    if let Ok(s) = serde_json::from_str::<T>(content.trim()) {
         return Ok(s);
     }
     let json = extract_json(content).context("model did not return a JSON object")?;
-    serde_json::from_str(&json).context("decoding suggestion JSON")
+    serde_json::from_str(&json).context("decoding model JSON")
 }
 
 /// Pull the outermost `{ ... }` out of a possibly-chatty response (code fences, prose).

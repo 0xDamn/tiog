@@ -11,7 +11,7 @@ use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
-use crate::output::Suggestion;
+use crate::output::AssistantResponse;
 
 const KEEP: usize = 12; // exchanges retained on disk
 const SHOW: usize = 3; // most-recent exchanges shown to the model
@@ -19,8 +19,25 @@ const SHOW: usize = 3; // most-recent exchanges shown to the model
 #[derive(Serialize, Deserialize)]
 struct Exchange {
     q: String,
+    #[serde(default)]
+    plugin: String,
+    #[serde(default)]
+    kind: String,
+    #[serde(default)]
+    output: String,
+    #[serde(default)]
     command: String,
     explanation: String,
+}
+
+impl Exchange {
+    fn result(&self) -> &str {
+        if self.output.is_empty() {
+            &self.command
+        } else {
+            &self.output
+        }
+    }
 }
 
 fn path() -> Option<PathBuf> {
@@ -117,26 +134,44 @@ fn read_all() -> Vec<Exchange> {
 fn redact_exchange(ex: Exchange) -> Exchange {
     Exchange {
         q: crate::redact::redact(&ex.q),
+        plugin: ex.plugin,
+        kind: ex.kind,
+        output: crate::redact::redact(&ex.output),
         command: crate::redact::redact(&ex.command),
         explanation: crate::redact::redact(&ex.explanation),
     }
 }
 
-/// Append an exchange. No-op when no command was produced (a clarification isn't worth
-/// remembering as a turn).
-pub fn record(question: &str, suggestion: &Suggestion) {
-    if suggestion.command.trim().is_empty() {
-        return;
-    }
+pub fn record_response(question: &str, response: &AssistantResponse) {
+    let exchange = match response {
+        AssistantResponse::Command(s) if !s.command.trim().is_empty() => Exchange {
+            q: question.to_string(),
+            plugin: s.plugin.clone(),
+            kind: "command".into(),
+            output: s.command.clone(),
+            command: s.command.clone(),
+            explanation: s.explanation.clone(),
+        },
+        AssistantResponse::Text(t) if !t.text.trim().is_empty() => Exchange {
+            q: question.to_string(),
+            plugin: t.plugin.clone(),
+            kind: "text".into(),
+            output: t.text.clone(),
+            command: String::new(),
+            explanation: t.explanation.clone(),
+        },
+        _ => return,
+    };
+
     let Some(p) = path() else {
         return;
     };
+    write_exchange(p, exchange);
+}
+
+fn write_exchange(p: PathBuf, exchange: Exchange) {
     let mut all = read_all();
-    all.push(redact_exchange(Exchange {
-        q: question.to_string(),
-        command: suggestion.command.clone(),
-        explanation: suggestion.explanation.clone(),
-    }));
+    all.push(redact_exchange(exchange));
     let start = all.len().saturating_sub(KEEP);
     if let Some(dir) = p.parent() {
         let _ = crate::statefile::create_private_dir(dir);
@@ -160,10 +195,10 @@ pub fn recent() -> Option<String> {
     let mut out = String::from("Recent tiog conversation (this session, oldest first):\n");
     for (i, ex) in all[start..].iter().enumerate() {
         out.push_str(&format!(
-            "{}. you asked: \"{}\"\n   tiog suggested: {} — {}\n",
+            "{}. you asked: \"{}\"\n   tiog returned: {} — {}\n",
             i + 1,
             ex.q,
-            ex.command,
+            ex.result(),
             ex.explanation
         ));
     }
@@ -196,11 +231,15 @@ mod tests {
     fn persisted_exchange_is_redacted() {
         let ex = redact_exchange(Exchange {
             q: "use API_KEY=sk-abcdef0123456789xyz".into(),
+            plugin: "command".into(),
+            kind: "command".into(),
+            output: "curl -H 'Bearer abcdef0123456789' https://example.com".into(),
             command: "curl -H 'Bearer abcdef0123456789' https://example.com".into(),
             explanation: "uses token=ghp_0123456789abcdefghij0123".into(),
         });
 
         assert!(!ex.q.contains("sk-"));
+        assert!(!ex.output.contains("Bearer abc"));
         assert!(!ex.command.contains("Bearer abc"));
         assert!(!ex.explanation.contains("ghp_"));
     }

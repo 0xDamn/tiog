@@ -23,7 +23,7 @@ and what's deferred (the PTY recorder).
 
 Handy while hacking:
 
-- `tiog --show-context` prints the exact (redacted) context tiog would send — no API call.
+- `tiog --show-context` prints the command plugin's redacted terminal context — no API call.
 - A tiny local mock OpenAI-compatible server makes it easy to test providers, redaction, and
   the `--shell` exit codes without real API keys.
 
