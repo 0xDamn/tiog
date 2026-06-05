@@ -15,8 +15,8 @@ current directory, recent commands, and (inside tmux) their output — so answer
 *your* situation, not generic.
 
 tiog can also route requests to prompt/config plugins. The built-in `command` plugin keeps
-the original command-assistant behavior, while the built-in `translator` plugin handles
-context-free translation requests:
+the original command-assistant behavior, `explainer` explains concepts/errors/session output,
+and `translator` handles context-free translation requests:
 
 ```sh
 tiog local state files are written unredacted into Chinese
@@ -89,6 +89,16 @@ router:
   min_confidence: 0.55
 
 plugins:
+  explainer:
+    description: "Explain concepts, definitions, commands, errors, and terminal output."
+    output: text
+    include_context: true
+    include_conversation: true
+    system_prompt: |
+      Explain clearly and briefly. If the request mentions an error, last command, output,
+      or session state, use the provided terminal context. Prefer practical terminal-focused
+      explanations. Define jargon before using it.
+
   translator:
     description: "Translate text between human languages."
     output: text
@@ -104,6 +114,7 @@ Useful plugin flags:
 
 ```sh
 tiog --list-plugins
+tiog --plugin explainer what is inode
 tiog --plugin translator local state files are written unredacted into Chinese
 tiog --no-context how do I list files by size
 ```

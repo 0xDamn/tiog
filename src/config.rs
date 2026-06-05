@@ -175,6 +175,21 @@ fn builtin_plugins() -> BTreeMap<String, Plugin> {
             },
         ),
         (
+            "explainer".into(),
+            Plugin {
+                description:
+                    "Explain concepts, definitions, commands, errors, and terminal output.".into(),
+                output: "text".into(),
+                include_context: true,
+                include_conversation: true,
+                system_prompt: "Explain clearly and briefly. If the request mentions an error, \
+last command, output, or session state, use the provided terminal context. Prefer practical \
+terminal-focused explanations. Define jargon before using it."
+                    .into(),
+                builtin: true,
+            },
+        ),
+        (
             "translator".into(),
             Plugin {
                 description: "Translate text between human languages.".into(),
@@ -191,4 +206,19 @@ fn builtin_plugins() -> BTreeMap<String, Plugin> {
 
 fn builtin_plugin(name: &str) -> Option<Plugin> {
     builtin_plugins().remove(name)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn explainer_builtin_uses_context_and_conversation() {
+        let plugin = Config::default().plugin("explainer").unwrap();
+
+        assert_eq!(plugin.output, "text");
+        assert!(plugin.include_context);
+        assert!(plugin.include_conversation);
+        assert!(plugin.description.contains("Explain"));
+    }
 }

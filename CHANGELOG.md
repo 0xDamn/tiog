@@ -10,6 +10,7 @@ All notable changes to this project are documented here. The format loosely foll
 - Session-scoped conversation memory: tiog remembers recent exchanges in a terminal session,
   so follow-ups like "teach me more" or "with examples" build on the previous answer.
 - Prompt/config plugin routing with built-in `command` and `translator` plugins.
+- Built-in `explainer` plugin for concepts, definitions, command output, and error messages.
 - CLI flags for plugin control: `--list-plugins`, `--plugin <NAME>`, and `--no-context`.
 
 ### Fixed

@@ -9,6 +9,7 @@
 
 ```sh
 tiog how do I list files by size, largest first
+tiog --plugin explainer what is inode
 tiog --plugin translator local state files are written unredacted into Chinese
 tiog --no-context explain tar -xzf
 ```
@@ -48,6 +49,7 @@ Built-in plugins:
 | Plugin | Output | Context | Conversation |
 |---|---|---|---|
 | `command` | command | yes | yes |
+| `explainer` | text | yes | yes |
 | `translator` | text | no | no |
 
 Prompt/config plugins are not executable code. A plugin defines description, output type,

@@ -23,8 +23,19 @@ router:
 
 # Built-ins exist even when omitted:
 # - command: shell command suggestions, includes terminal context + conversation memory
+# - explainer: concepts/errors/output explanation, includes terminal context + conversation memory
 # - translator: text translation, context-free by default
 plugins:
+  explainer:
+    description: "Explain concepts, definitions, commands, errors, and terminal output."
+    output: text
+    include_context: true
+    include_conversation: true
+    system_prompt: |
+      Explain clearly and briefly. If the request mentions an error, last command, output,
+      or session state, use the provided terminal context. Prefer practical terminal-focused
+      explanations. Define jargon before using it.
+
   translator:
     description: "Translate text between human languages."
     output: text                   # text | command
