@@ -1,0 +1,17 @@
+# tiog configuration — copy to ~/.config/tiog/config.yaml
+# Every field is optional; omitted fields fall back to the defaults shown here.
+# tiog honors $XDG_CONFIG_HOME; otherwise it reads ~/.config/tiog/config.yaml.
+
+model:
+  provider: anthropic              # anthropic | openai | openai-compatible
+  name: claude-sonnet-4-6
+  api_key_env: ANTHROPIC_API_KEY   # tiog reads your key from THIS env var, never the file
+  base_url: null                   # required for openai-compatible (e.g. DeepSeek, Ollama)
+
+context:
+  source: auto                     # auto | tmux | hooks
+  history_lines: 40                # how many recent commands / lines of context to include
+  redact: true                     # scrub secrets from context before sending
+
+behavior:
+  auto_run: "off"                  # "off" | "safe" (hotkey auto-runs risk:none cmds; quote it)

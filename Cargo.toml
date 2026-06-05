@@ -1,0 +1,27 @@
+[package]
+name = "tiog"
+version = "0.1.0"
+edition = "2021"
+description = "Terminal-native command agent: ask in plain language, get the command in your prompt — grounded in your live shell session."
+authors = ["Adrian Wang (0xDamn)"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/0xDamn/tiog"
+homepage = "https://github.com/0xDamn/tiog"
+readme = "README.md"
+keywords = ["cli", "terminal", "llm", "ai", "shell"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# serde_yaml is in maintenance mode but battle-tested; swap for a maintained fork later if needed.
+serde_yaml = "0.9"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+anyhow = "1"
+dirs = "5"
+regex = "1"
+
+[profile.release]
+strip = true
