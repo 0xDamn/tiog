@@ -1,14 +1,14 @@
 # tiog
 
-**Ask your terminal in plain language — get the command, in your prompt, grounded in what you're actually doing.**
+**Ask your terminal in plain language — get commands or text answers grounded in your working directory.**
 
 [![CI](https://github.com/0xDamn/tiog/actions/workflows/ci.yml/badge.svg)](https://github.com/0xDamn/tiog/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 You live in the terminal. You hit a wall — the exact `sed` flags, that `ffmpeg` incantation,
 why the last command failed — and today that means tabbing over to a chatbot, asking, tabbing
-back, retyping. `tiog` closes that loop: ask in place, and the answer lands in your prompt,
-ready to review and run.
+back, retyping. `tiog` closes that loop: ask from any shell, get a focused answer on stdout,
+and decide what to run.
 
 What makes it more than a chat wrapper: tiog is **bound to your terminal**. It sees your
 current directory, recent commands, and (inside tmux) their output — so answers are about
@@ -22,13 +22,7 @@ context-free translation requests:
 tiog local state files are written unredacted into Chinese
 ```
 
-```text
-~/proj > replace all foo with bar in every .txt        [Ctrl-G]
-         macOS sed needs '' after -i for in-place edits.
-~/proj > sed -i '' 's/foo/bar/g' *.txt                 [Enter]
-```
-
-> ⚠️ **Early days (v0.1).** Works well on macOS + fish. Full output capture currently needs
+> ⚠️ **Early days (v0.1).** Works well as a shell-agnostic CLI. Full output capture currently needs
 > tmux; the standalone PTY recorder is deferred (see [Roadmap](#roadmap)). Feedback and PRs
 > welcome.
 
@@ -104,9 +98,7 @@ plugins:
       Translate faithfully. Preserve technical terms when appropriate.
 ```
 
-Text plugins print the short explanation to stderr and the main result to stdout. In the
-fish hotkey, command results still replace the prompt; text results are printed below the
-current prompt and are not injected as shell commands.
+Text plugins print the short explanation to stderr and the main result to stdout.
 
 Useful plugin flags:
 
@@ -119,25 +111,12 @@ tiog --no-context how do I list files by size
 Then set the key and ask:
 
 ```sh
-set -x ANTHROPIC_API_KEY sk-ant-...     # fish
+export ANTHROPIC_API_KEY=sk-ant-...
 tiog -- how do I list files by size, largest first
 ```
 
-The explanation prints to stderr and the command to stdout, so `tiog -- … | pbcopy` copies
-just the command.
-
-## The Ctrl-G hotkey (fish)
-
-In-place injection is the whole point. Install the fish integration:
-
-```sh
-ln -s (path resolve shell/tiog.fish) ~/.config/fish/conf.d/tiog.fish
-exec fish
-```
-
-Now **type your request on the command line and press `Ctrl-G`** — tiog replaces the line
-with the suggested command (explanation shown dimmed above it). Review, press Enter. Rebind by
-editing the `bind \cg` line in [`shell/tiog.fish`](./shell/tiog.fish).
+The explanation prints to stderr and the command or text result prints to stdout, so
+`tiog -- … | pbcopy` copies just the main result.
 
 ## How it works
 
@@ -147,7 +126,7 @@ which returns a structured `{command, explanation, risk}`.
 | Source | Sees output? | Needs |
 |---|---|---|
 | `tmux` | ✅ real scrollback (`capture-pane`) | being inside tmux |
-| `hooks` | ❌ commands + exit codes | the fish integration's session log |
+| `hooks` | ❌ commands + exit codes | `$TIOG_SESSION_LOG` in `exit<TAB>cwd<TAB>command` format |
 | `auto` *(default)* | best available | — |
 
 Inspect the command plugin's terminal context, with no API call:
@@ -161,14 +140,13 @@ tiog --show-context
 - **Secrets are redacted** from context before sending (API keys, tokens, `KEY=value`, JWTs…).
 - **Destructive commands** (`rm -rf`, `dd`, force-push, …) are flagged even if the model
   doesn't mark them.
-- **Paste-only by default** — nothing runs until you press Enter. Opt into
-  `behavior.auto_run: safe` to let the hotkey auto-run *only* `risk: none` commands.
+- **No automatic execution** — tiog prints suggestions; your shell decides what runs.
 
 ## Roadmap
 
-- ✅ Multi-provider queries · fish Ctrl-G injection · tmux/hooks context · redaction · safety.
+- ✅ Multi-provider queries · routed prompt plugins · tmux/hooks context · redaction · safety.
 - ⏸ **PTY session recorder** — full output capture outside tmux (`pty` source is a placeholder).
-- ◻ Streaming output · follow-up/refine · zsh & bash integration · `tiog init` installer.
+- ◻ Streaming output · follow-up/refine · optional shell integrations · `tiog init` installer.
 
 Architecture and milestone detail live in [DESIGN.md](./DESIGN.md).
 

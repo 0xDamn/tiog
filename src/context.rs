@@ -49,7 +49,7 @@ fn resolve(source: &str) -> Box<dyn ContextSource> {
 }
 
 /// `auto`: a recorder session (`TIOG_SESSION`) → pty; else inside tmux (`$TMUX`) → tmux;
-/// else the fish hooks log.
+/// else a generic hooks log (`$TIOG_SESSION_LOG`) when present.
 fn auto() -> Box<dyn ContextSource> {
     if std::env::var_os("TIOG_SESSION").is_some() {
         Box::new(PtySource)

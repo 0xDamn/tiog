@@ -1,6 +1,6 @@
-//! `hooks` source — reads the per-session command log the fish integration writes to
+//! `hooks` source — reads a per-session command log from
 //! `$TIOG_SESSION_LOG`: one `exitcode<TAB>cwd<TAB>command` line per command. No output,
-//! but it always works and needs no tmux/recorder.
+//! but it needs no tmux/recorder when a shell integration or wrapper produces the log.
 
 use std::fmt::Write as _;
 

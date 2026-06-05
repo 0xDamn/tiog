@@ -14,7 +14,7 @@ context:
   redact: true                     # scrub secrets from context before sending
 
 behavior:
-  auto_run: "off"                  # "off" | "safe" (hotkey auto-runs risk:none cmds; quote it)
+  auto_run: "off"                  # reserved for optional shell integrations; quote it
 
 router:
   enabled: true                    # model-routes requests to plugins; falls back to command

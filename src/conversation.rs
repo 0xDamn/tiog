@@ -1,7 +1,7 @@
 //! Lightweight, session-scoped memory of recent tiog exchanges, so follow-ups like
 //! "teach me more" build on the previous answer instead of starting cold.
 //!
-//! Scoped to the current shell session by reusing the fish integration's session-log path
+//! Scoped to the current shell session by reusing `$TIOG_SESSION_LOG` when present
 //! (`.../session-<id>.log` -> `.../conversation-<id>.log`); otherwise keyed by the current
 //! terminal session or tty. Best-effort: IO errors are ignored.
 

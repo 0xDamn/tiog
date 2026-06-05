@@ -9,10 +9,14 @@ All notable changes to this project are documented here. The format loosely foll
 ### Added
 - Session-scoped conversation memory: tiog remembers recent exchanges in a terminal session,
   so follow-ups like "teach me more" or "with examples" build on the previous answer.
+- Prompt/config plugin routing with built-in `command` and `translator` plugins.
+- CLI flags for plugin control: `--list-plugins`, `--plugin <NAME>`, and `--no-context`.
 
 ### Fixed
 - tiog no longer parrots its own previous answer: it records its output and strips it from
   future captured terminal context (it was being fed back through the scrollback).
+- Local state files are redacted before persistence and created with user-only permissions.
+- Long-form destructive `rm` flags are detected by the local risk classifier.
 
 ## [0.1.0] - 2026-06-05
 
@@ -24,13 +28,10 @@ Initial release.
 - Model backends: Anthropic (tool use) and OpenAI / OpenAI-compatible (JSON mode). The
   compatible provider covers DeepSeek, Ollama, and other OpenAI-shaped endpoints via
   `base_url` (API key optional for local servers).
-- fish integration: a `Ctrl-G` hotkey that injects the suggested command into your prompt,
-  plus a per-session command log.
 - Pluggable terminal context: `tmux` (real scrollback via `capture-pane`), `hooks`
   (commands + exit codes), and an `auto` selector. `tiog --show-context` to inspect it.
 - Secret redaction of context before it is sent to a model.
-- Safety model: local destructive-command detection reconciled with the model's risk, and an
-  opt-in `auto_run: safe` (only `risk: none` commands auto-run via the hotkey).
+- Safety model: local destructive-command detection reconciled with the model's risk.
 
 ### Deferred
 - PTY session recorder for full output capture outside tmux — the `pty` context source is a
