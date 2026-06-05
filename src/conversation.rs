@@ -108,9 +108,18 @@ fn read_all() -> Vec<Exchange> {
         .map(|s| {
             s.lines()
                 .filter_map(|l| serde_json::from_str::<Exchange>(l).ok())
+                .map(redact_exchange)
                 .collect()
         })
         .unwrap_or_default()
+}
+
+fn redact_exchange(ex: Exchange) -> Exchange {
+    Exchange {
+        q: crate::redact::redact(&ex.q),
+        command: crate::redact::redact(&ex.command),
+        explanation: crate::redact::redact(&ex.explanation),
+    }
 }
 
 /// Append an exchange. No-op when no command was produced (a clarification isn't worth
@@ -123,16 +132,16 @@ pub fn record(question: &str, suggestion: &Suggestion) {
         return;
     };
     let mut all = read_all();
-    all.push(Exchange {
+    all.push(redact_exchange(Exchange {
         q: question.to_string(),
         command: suggestion.command.clone(),
         explanation: suggestion.explanation.clone(),
-    });
+    }));
     let start = all.len().saturating_sub(KEEP);
     if let Some(dir) = p.parent() {
-        let _ = std::fs::create_dir_all(dir);
+        let _ = crate::statefile::create_private_dir(dir);
     }
-    if let Ok(mut f) = std::fs::File::create(&p) {
+    if let Ok(mut f) = crate::statefile::create_private(&p) {
         for ex in &all[start..] {
             if let Ok(line) = serde_json::to_string(ex) {
                 let _ = writeln!(f, "{line}");
@@ -181,5 +190,18 @@ mod tests {
     fn sanitize_key_rejects_empty_values() {
         assert_eq!(sanitize_key("////"), None);
         assert_eq!(sanitize_key(""), None);
+    }
+
+    #[test]
+    fn persisted_exchange_is_redacted() {
+        let ex = redact_exchange(Exchange {
+            q: "use API_KEY=sk-abcdef0123456789xyz".into(),
+            command: "curl -H 'Bearer abcdef0123456789' https://example.com".into(),
+            explanation: "uses token=ghp_0123456789abcdefghij0123".into(),
+        });
+
+        assert!(!ex.q.contains("sk-"));
+        assert!(!ex.command.contains("Bearer abc"));
+        assert!(!ex.explanation.contains("ghp_"));
     }
 }

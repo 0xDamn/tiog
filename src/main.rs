@@ -8,6 +8,7 @@ mod query;
 mod redact;
 mod risk;
 mod selflog;
+mod statefile;
 
 #[tokio::main]
 async fn main() {

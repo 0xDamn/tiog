@@ -25,20 +25,20 @@ pub fn record(lines: &[String]) {
         return;
     };
     let mut kept: Vec<String> = std::fs::read_to_string(&p)
-        .map(|s| s.lines().map(str::to_string).collect())
+        .map(|s| s.lines().map(crate::redact::redact).collect())
         .unwrap_or_default();
     kept.extend(
         lines
             .iter()
             .map(|l| l.trim())
             .filter(|l| !l.is_empty())
-            .map(str::to_string),
+            .map(crate::redact::redact),
     );
     let start = kept.len().saturating_sub(MAX_LINES);
     if let Some(dir) = p.parent() {
-        let _ = std::fs::create_dir_all(dir);
+        let _ = crate::statefile::create_private_dir(dir);
     }
-    if let Ok(mut f) = std::fs::File::create(&p) {
+    if let Ok(mut f) = crate::statefile::create_private(&p) {
         let _ = writeln!(f, "{}", kept[start..].join("\n"));
     }
 }

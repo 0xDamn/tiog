@@ -25,9 +25,26 @@ if set -q XDG_STATE_HOME; and test -n "$XDG_STATE_HOME"
     set __tiog_state_dir "$XDG_STATE_HOME/tiog/sessions"
 end
 mkdir -p $__tiog_state_dir 2>/dev/null
+chmod 700 $__tiog_state_dir 2>/dev/null
 set -gx TIOG_SESSION_LOG "$__tiog_state_dir/session-$fish_pid.log"
+touch "$TIOG_SESSION_LOG" 2>/dev/null; and chmod 600 "$TIOG_SESSION_LOG" 2>/dev/null
 # best-effort retention: drop session logs older than 7 days (one fork, at shell start)
 find $__tiog_state_dir -name 'session-*.log' -mtime +7 -delete 2>/dev/null
+
+function __tiog_redact_line --description 'tiog: scrub common secret shapes before local logging'
+    set -l line $argv[1]
+    set line (string replace -ra '(?i)\b(api[_-]?key|secret|token|password|passwd|pwd|access[_-]?key|auth)\b(\s*[:=]\s*)(\S+)' '$1$2[REDACTED]' -- $line)
+    set line (string replace -ra 'sk-[A-Za-z0-9_-]{16,}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'gh[posru]_[A-Za-z0-9]{20,}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'github_pat_[A-Za-z0-9_]{20,}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'glpat-[A-Za-z0-9_-]{16,}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'xox[baprs]-[A-Za-z0-9-]{10,}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'AKIA[0-9A-Z]{16}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'AIza[0-9A-Za-z_\-]{35}' '[REDACTED]' -- $line)
+    set line (string replace -ra 'eyJ[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}\.[A-Za-z0-9_\-]{8,}' '[REDACTED]' -- $line)
+    set line (string replace -ra '(?i)bearer\s+[A-Za-z0-9._\-]{12,}' '[REDACTED]' -- $line)
+    printf '%s\n' "$line"
+end
 
 function __tiog_log_cmd --on-event fish_postexec --description 'tiog: record command + exit code'
     set -l code $status # capture exit status FIRST — anything else clobbers $status
@@ -35,6 +52,7 @@ function __tiog_log_cmd --on-event fish_postexec --description 'tiog: record com
     test -n "$TIOG_SESSION_LOG"; or return
     test -n "$argv[1]"; or return
     set -l line (string replace -a \n ' ' -- $argv[1])
+    set line (__tiog_redact_line "$line")
     printf '%d\t%s\t%s\n' $code "$PWD" "$line" >>$TIOG_SESSION_LOG
 end
 
