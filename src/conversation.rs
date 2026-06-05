@@ -2,11 +2,12 @@
 //! "teach me more" build on the previous answer instead of starting cold.
 //!
 //! Scoped to the current shell session by reusing the fish integration's session-log path
-//! (`.../session-<id>.log` -> `.../conversation-<id>.log`); falls back to a shared file when
-//! the integration isn't installed. Best-effort: IO errors are ignored.
+//! (`.../session-<id>.log` -> `.../conversation-<id>.log`); otherwise keyed by the current
+//! terminal session or tty. Best-effort: IO errors are ignored.
 
 use std::io::Write as _;
 use std::path::PathBuf;
+use std::process::Command;
 
 use serde::{Deserialize, Serialize};
 
@@ -31,11 +32,74 @@ fn path() -> Option<PathBuf> {
             }
         }
     }
-    let base = match std::env::var("XDG_STATE_HOME") {
+    let base = state_dir()?;
+    let key = session_key()?;
+    Some(base.join(format!("tiog/conversation-{key}.log")))
+}
+
+fn state_dir() -> Option<PathBuf> {
+    Some(match std::env::var("XDG_STATE_HOME") {
         Ok(x) if !x.is_empty() => PathBuf::from(x),
         _ => dirs::home_dir()?.join(".local/state"),
-    };
-    Some(base.join("tiog/conversation.log"))
+    })
+}
+
+fn session_key() -> Option<String> {
+    for name in [
+        "TIOG_SESSION",
+        "TMUX_PANE",
+        "TERM_SESSION_ID",
+        "ITERM_SESSION_ID",
+        "WT_SESSION",
+        "KONSOLE_DBUS_SESSION",
+    ] {
+        if let Ok(value) = std::env::var(name) {
+            if !value.is_empty() {
+                return sanitize_key(&format!("{name}-{value}"));
+            }
+        }
+    }
+
+    tty_name().and_then(|tty| sanitize_key(&format!("tty-{tty}")))
+}
+
+fn tty_name() -> Option<String> {
+    let out = Command::new("tty").output().ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    let tty = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    (!tty.is_empty() && tty != "not a tty").then_some(tty)
+}
+
+fn sanitize_key(raw: &str) -> Option<String> {
+    let mut out = String::new();
+    let mut last_sep = false;
+    for ch in raw.chars() {
+        let mapped = if ch.is_ascii_alphanumeric() {
+            ch.to_ascii_lowercase()
+        } else if matches!(ch, '.' | '_' | '-') {
+            ch
+        } else {
+            '-'
+        };
+        if mapped == '-' {
+            if out.is_empty() || last_sep {
+                continue;
+            }
+            last_sep = true;
+        } else {
+            last_sep = false;
+        }
+        out.push(mapped);
+        if out.len() >= 96 {
+            break;
+        }
+    }
+    let trimmed = out
+        .trim_matches(|ch| matches!(ch, '-' | '.' | '_'))
+        .to_string();
+    (!trimmed.is_empty()).then_some(trimmed)
 }
 
 fn read_all() -> Vec<Exchange> {
@@ -95,4 +159,27 @@ pub fn recent() -> Option<String> {
         ));
     }
     Some(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_key_makes_safe_filename_piece() {
+        assert_eq!(
+            sanitize_key("tty-/dev/ttys001").as_deref(),
+            Some("tty-dev-ttys001")
+        );
+        assert_eq!(
+            sanitize_key("TMUX_PANE-%12").as_deref(),
+            Some("tmux_pane-12")
+        );
+    }
+
+    #[test]
+    fn sanitize_key_rejects_empty_values() {
+        assert_eq!(sanitize_key("////"), None);
+        assert_eq!(sanitize_key(""), None);
+    }
 }
