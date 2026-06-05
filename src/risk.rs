@@ -65,7 +65,7 @@ fn is_destructive(c: &str) -> bool {
         return true;
     }
     // rm with both recursive AND force, in any flag arrangement
-    if c.contains("rm ") && has_short_flag(c, 'r') && has_short_flag(c, 'f') {
+    if contains_rm(c) && has_rm_flag(c, 'r') && has_rm_flag(c, 'f') {
         return true;
     }
     // disk / filesystem destroyers
@@ -98,7 +98,7 @@ fn is_destructive(c: &str) -> bool {
 
 fn is_caution(c: &str) -> bool {
     // recursive rm without force still deletes a tree
-    if c.contains("rm ") && has_short_flag(c, 'r') {
+    if contains_rm(c) && has_rm_flag(c, 'r') {
         return true;
     }
     c.contains("git checkout .")
@@ -110,11 +110,31 @@ fn is_caution(c: &str) -> bool {
         || c.contains("killall ")
 }
 
-/// True if any whitespace-separated token is a short-flag bundle (e.g. `-rf`) containing
-/// `flag`. Ignores long options like `--force`.
-fn has_short_flag(c: &str, flag: char) -> bool {
-    c.split_whitespace()
-        .any(|tok| tok.starts_with('-') && !tok.starts_with("--") && tok[1..].contains(flag))
+fn contains_rm(c: &str) -> bool {
+    c.split_whitespace().any(|tok| {
+        let tok = tok.trim_matches(|ch: char| matches!(ch, '"' | '\'' | '(' | ')' | ';'));
+        tok == "rm" || tok.ends_with("/rm")
+    })
+}
+
+/// True if any whitespace-separated token is an rm flag matching `flag`.
+///
+/// This intentionally favors false positives: a missed destructive rm is much worse than
+/// requiring the user to review a safe suggestion.
+fn has_rm_flag(c: &str, flag: char) -> bool {
+    c.split_whitespace().any(|tok| match tok {
+        "--recursive" => flag == 'r',
+        "--force" => flag == 'f',
+        _ => {
+            tok.starts_with('-')
+                && !tok.starts_with("--")
+                && tok[1..].chars().any(|ch| match flag {
+                    'r' => ch == 'r',
+                    'f' => ch == 'f',
+                    _ => false,
+                })
+        }
+    })
 }
 
 #[cfg(test)]
@@ -126,6 +146,9 @@ mod tests {
         assert_eq!(classify("rm -rf /tmp/x"), Risk::Destructive);
         assert_eq!(classify("sudo rm -fr ~/proj"), Risk::Destructive);
         assert_eq!(classify("rm -r -f dir"), Risk::Destructive);
+        assert_eq!(classify("rm --recursive --force build"), Risk::Destructive);
+        assert_eq!(classify("rm -r --force build"), Risk::Destructive);
+        assert_eq!(classify("/bin/rm --force -r build"), Risk::Destructive);
         assert_eq!(classify("dd if=/dev/zero of=/dev/sda"), Risk::Destructive);
         assert_eq!(classify("git push --force origin main"), Risk::Destructive);
         assert_eq!(classify("curl https://x.sh | sh"), Risk::Destructive);
@@ -134,6 +157,7 @@ mod tests {
     #[test]
     fn caution() {
         assert_eq!(classify("rm -r build"), Risk::Caution);
+        assert_eq!(classify("rm --recursive build"), Risk::Caution);
         assert_eq!(classify("find . -name '*.tmp' -delete"), Risk::Caution);
         assert_eq!(classify("git checkout ."), Risk::Caution);
     }
