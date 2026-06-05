@@ -6,10 +6,13 @@ All notable changes to this project are documented here. The format loosely foll
 
 ## [Unreleased]
 
+### Added
+- Session-scoped conversation memory: tiog remembers recent exchanges in a terminal session,
+  so follow-ups like "teach me more" or "with examples" build on the previous answer.
+
 ### Fixed
-- Vague follow-ups ("teach me more", "again") no longer repeat the previous answer. tiog now
-  records its own output and strips it from future captured context, and asks for specifics
-  (via `needs`) when a request has no concrete target — it has no conversation memory.
+- tiog no longer parrots its own previous answer: it records its output and strips it from
+  future captured terminal context (it was being fed back through the scrollback).
 
 ## [0.1.0] - 2026-06-05
 

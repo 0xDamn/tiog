@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod context;
+mod conversation;
 mod model;
 mod output;
 mod query;
