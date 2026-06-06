@@ -1,6 +1,6 @@
 [package]
 name = "tiog"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Terminal-native command agent: ask in plain language, get the command in your prompt — grounded in your live shell session."
 authors = ["Adrian Wang (0xDamn)"]
