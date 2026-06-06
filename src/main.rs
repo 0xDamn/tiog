@@ -7,6 +7,7 @@ mod output;
 mod query;
 mod redact;
 mod risk;
+mod route_cache;
 mod selflog;
 mod statefile;
 

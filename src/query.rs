@@ -123,16 +123,34 @@ async fn select_plugin(
     }
 
     let catalog = plugin_catalog(cfg);
-    let decision = crate::model::route(cfg, question, &catalog)
-        .await
-        .unwrap_or_else(|_| RouteDecision {
-            plugin: default.clone(),
-            confidence: 0.0,
-            reason: String::new(),
-            normalized_request: String::new(),
-        });
+    let cache_key = crate::route_cache::key(cfg, question, &catalog, &default);
+    if let Some(cached) = crate::route_cache::get(&cache_key) {
+        if cfg.plugin(&cached.plugin).is_some() {
+            return Ok(SelectedPlugin {
+                name: cached.plugin,
+                request: question.into(),
+            });
+        }
+    }
 
-    Ok(resolve_decision(cfg, decision, &default, question))
+    let decision = match crate::model::route(cfg, question, &catalog).await {
+        Ok(decision) => decision,
+        Err(_) => {
+            return Ok(SelectedPlugin {
+                name: default,
+                request: question.into(),
+            });
+        }
+    };
+
+    let selected = resolve_decision(cfg, decision, &default, question);
+    crate::route_cache::put(
+        &cache_key,
+        &crate::route_cache::CachedRoute {
+            plugin: selected.name.clone(),
+        },
+    );
+    Ok(selected)
 }
 
 fn resolve_decision(

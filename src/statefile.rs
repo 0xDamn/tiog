@@ -1,7 +1,7 @@
 //! Helpers for writing local state files without making them world-readable.
 
 use std::fs::{File, OpenOptions};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[cfg(unix)]
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
@@ -34,6 +34,13 @@ pub fn create_private_dir(path: &Path) -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+pub fn state_dir() -> Option<PathBuf> {
+    Some(match std::env::var("XDG_STATE_HOME") {
+        Ok(x) if !x.is_empty() => PathBuf::from(x),
+        _ => dirs::home_dir()?.join(".local/state"),
+    })
 }
 
 #[cfg(all(test, unix))]

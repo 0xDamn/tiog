@@ -55,10 +55,7 @@ fn path() -> Option<PathBuf> {
 }
 
 fn state_dir() -> Option<PathBuf> {
-    Some(match std::env::var("XDG_STATE_HOME") {
-        Ok(x) if !x.is_empty() => PathBuf::from(x),
-        _ => dirs::home_dir()?.join(".local/state"),
-    })
+    crate::statefile::state_dir()
 }
 
 fn session_key() -> Option<String> {
