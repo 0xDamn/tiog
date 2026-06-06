@@ -24,7 +24,7 @@ pub async fn suggest(cfg: &Config, question: &str, context: &str) -> Result<Sugg
     let body = json!({
         "model": cfg.model.name,
         "max_tokens": MAX_TOKENS,
-        "system": prompt::SYSTEM,
+        "system": prompt::command_system(&cfg.behavior.output_language),
         "tools": [tool_schema()],
         "tool_choice": { "type": "tool", "name": "suggest_command" },
         "messages": [
@@ -94,14 +94,16 @@ pub async fn text_plugin(
     question: &str,
     context: &str,
 ) -> Result<TextResponse> {
+    let temperature = crate::model::text_plugin_temperature(plugin_name);
     let body = json!({
         "model": cfg.model.name,
         "max_tokens": MAX_TOKENS,
-        "system": prompt::text_plugin_system(&plugin.system_prompt),
+        "system": prompt::text_plugin_system(&plugin.system_prompt, &cfg.behavior.output_language),
+        "temperature": temperature,
         "tools": [text_tool_schema()],
         "tool_choice": { "type": "tool", "name": "return_text" },
         "messages": [
-            { "role": "user", "content": prompt::text_plugin_user_message(question, context) }
+            { "role": "user", "content": prompt::text_plugin_user_message(plugin_name, question, context) }
         ]
     });
 

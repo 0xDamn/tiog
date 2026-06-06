@@ -46,6 +46,10 @@ pub const TEXT_JSON_FORMAT: &str = "Respond with ONLY a single JSON object using
 \"text\" (string), \"explanation\" (one short line), \"needs\" (string, optional — set when no \
 answer is possible).";
 
+pub fn command_system(output_language: &str) -> String {
+    append_output_language(SYSTEM, output_language, command_language_instruction)
+}
+
 pub fn user_message(question: &str, context: &str) -> String {
     format!("# Terminal context\n{context}\n# Request\n{question}")
 }
@@ -54,18 +58,123 @@ pub fn router_message(question: &str, catalog: &str) -> String {
     format!("# Plugin catalog\n{catalog}\n# Request\n{question}")
 }
 
-pub fn text_plugin_system(plugin_prompt: &str) -> String {
+pub fn text_plugin_system(plugin_prompt: &str, output_language: &str) -> String {
+    let base = format!(
+        "{}\n\nReturn the user-facing answer in `text`. Keep `explanation` as brief internal metadata; it is not shown in normal output.",
+        plugin_prompt.trim()
+    );
     format!(
-        "{}\n\nReturn a text answer for stdout and a short explanation for stderr.\n\n{}",
-        plugin_prompt.trim(),
+        "{}\n\n{}",
+        append_output_language(&base, output_language, text_language_instruction),
         TEXT_JSON_FORMAT
     )
 }
 
-pub fn text_plugin_user_message(question: &str, context: &str) -> String {
-    if context.trim().is_empty() {
-        format!("# Request\n{question}")
+pub fn text_plugin_user_message(plugin_name: &str, question: &str, context: &str) -> String {
+    let request = if plugin_name == "interesting" {
+        format!(
+            "# Freshness\nnonce: {}\nUse this nonce only to vary topic selection; do not mention it.\n# Request\n{question}",
+            freshness_nonce()
+        )
     } else {
-        format!("# Context\n{context}\n# Request\n{question}")
+        format!("# Request\n{question}")
+    };
+
+    if context.trim().is_empty() {
+        request
+    } else {
+        format!("# Context\n{context}\n{request}")
+    }
+}
+
+fn append_output_language(
+    base: &str,
+    output_language: &str,
+    instruction: fn(&str) -> String,
+) -> String {
+    match normalized_output_language(output_language) {
+        Some(language) => format!("{}\n\n{}", base.trim(), instruction(language)),
+        None => base.trim().to_string(),
+    }
+}
+
+fn normalized_output_language(output_language: &str) -> Option<&str> {
+    let language = output_language.trim();
+    if language.is_empty()
+        || language.eq_ignore_ascii_case("auto")
+        || language.eq_ignore_ascii_case("default")
+    {
+        None
+    } else {
+        Some(language)
+    }
+}
+
+fn command_language_instruction(language: &str) -> String {
+    format!(
+        "Output language preference: write user-visible prose such as `explanation` and `needs` \
+in {language}, unless the user's request explicitly asks for another language. Do not translate, \
+localize, or rewrite shell commands, alternative commands, flags, paths, code, JSON keys, or \
+quoted literals."
+    )
+}
+
+fn text_language_instruction(language: &str) -> String {
+    format!(
+        "Output language preference: write user-visible prose such as `text`, `explanation`, \
+and `needs` in {language}, unless the user's request explicitly asks for another language. Do \
+not translate code, shell commands, flags, paths, JSON keys, or quoted literals unless the user \
+asks for translation."
+    )
+}
+
+fn freshness_nonce() -> String {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_nanos().to_string())
+        .unwrap_or_else(|_| "clock-unavailable".into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn auto_language_keeps_command_system_unchanged() {
+        assert_eq!(command_system("auto"), SYSTEM);
+    }
+
+    #[test]
+    fn command_system_adds_language_without_translating_commands() {
+        let system = command_system("Chinese");
+
+        assert!(system.contains("in Chinese"));
+        assert!(system.contains("Do not translate"));
+        assert!(system.contains("shell commands"));
+    }
+
+    #[test]
+    fn text_plugin_system_adds_language_before_json_contract() {
+        let system = text_plugin_system("Answer normally.", "Japanese");
+
+        assert!(system.contains("in Japanese"));
+        assert!(system.contains(TEXT_JSON_FORMAT));
+    }
+
+    #[test]
+    fn interesting_user_message_includes_freshness_nonce() {
+        let message = text_plugin_user_message("interesting", "I'm bored", "");
+
+        assert!(message.contains("# Freshness"));
+        assert!(message.contains("nonce:"));
+        assert!(message.contains("# Request\nI'm bored"));
+    }
+
+    #[test]
+    fn non_interesting_user_message_has_no_freshness_nonce() {
+        let message = text_plugin_user_message("translator", "translate hello", "");
+
+        assert!(!message.contains("# Freshness"));
+        assert_eq!(message, "# Request\ntranslate hello");
     }
 }

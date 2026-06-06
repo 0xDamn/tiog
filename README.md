@@ -16,7 +16,8 @@ current directory, recent commands, and (inside tmux) their output — so answer
 
 tiog can also route requests to prompt/config plugins. The built-in `command` plugin keeps
 the original command-assistant behavior, `explainer` explains concepts/errors/session output,
-and `translator` handles context-free translation requests:
+`translator` handles translation requests and follow-up references, and `interesting` gives
+you a short curiosity hit while you wait:
 
 ```sh
 tiog local state files are written unredacted into Chinese
@@ -52,6 +53,9 @@ model:
   provider: anthropic            # anthropic | openai | openai-compatible
   name: claude-sonnet-4-6
   api_key_env: ANTHROPIC_API_KEY
+
+behavior:
+  output_language: auto           # auto | English | Chinese | Japanese | ...
 ```
 
 <details><summary><b>OpenAI, DeepSeek, or local Ollama</b></summary>
@@ -103,12 +107,19 @@ plugins:
     description: "Translate text between human languages."
     output: text
     include_context: false
-    include_conversation: false
+    include_conversation: true
     system_prompt: |
-      Translate faithfully. Preserve technical terms when appropriate.
+      Translate faithfully. Preserve technical terms when appropriate. If the request refers
+      to previous text with words like "it", "that", "above", or "the previous answer",
+      translate the relevant prior tiog response from the recent conversation.
 ```
 
-Text plugins print the short explanation to stderr and the main result to stdout.
+Text plugins print only the main result to stdout in normal output; `--json` includes the
+raw structured response, including metadata fields.
+
+Set `behavior.output_language` to make tiog's prose answers use a preferred language. `auto`
+keeps the model's default behavior; explicit user requests such as "translate this into French"
+still take priority. Commands, flags, paths, code, and other literals are not translated.
 
 Useful plugin flags:
 
@@ -116,6 +127,7 @@ Useful plugin flags:
 tiog --list-plugins
 tiog --plugin explainer what is inode
 tiog --plugin translator local state files are written unredacted into Chinese
+tiog --plugin interesting I am bored waiting on another coding agent
 tiog --no-context how do I list files by size
 ```
 
@@ -126,8 +138,9 @@ export ANTHROPIC_API_KEY=sk-ant-...
 tiog -- how do I list files by size, largest first
 ```
 
-The explanation prints to stderr and the command or text result prints to stdout, so
-`tiog -- … | pbcopy` copies just the main result.
+For command responses, the explanation prints to stderr and the command prints to stdout. For
+text responses, only the text result prints to stdout. This keeps `tiog -- … | pbcopy`
+focused on the main result.
 
 ## How it works
 

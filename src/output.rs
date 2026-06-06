@@ -50,8 +50,8 @@ fn default_risk() -> String {
     "none".into()
 }
 
-/// Human output: explanation + warnings on stderr, the command on stdout (so it can be
-/// captured, e.g. `set cmd (tiog ...)`). `--json` emits the raw suggestion on stdout.
+/// Human output: command explanations/warnings on stderr, command/text result on stdout
+/// (so it can be captured, e.g. `set cmd (tiog ...)`). `--json` emits the raw response.
 pub fn render(response: &AssistantResponse, as_json: bool) {
     if as_json {
         match serde_json::to_string(response) {
@@ -95,9 +95,6 @@ fn render_text(t: &TextResponse) {
         return;
     }
 
-    if !t.explanation.trim().is_empty() {
-        eprintln!("{}", t.explanation);
-    }
     println!("{}", t.text);
 }
 
@@ -123,9 +120,6 @@ pub fn response_lines(response: &AssistantResponse) -> Vec<String> {
         AssistantResponse::Command(s) => suggestion_lines(s),
         AssistantResponse::Text(t) => {
             let mut lines = Vec::new();
-            if !t.explanation.trim().is_empty() {
-                lines.extend(t.explanation.lines().map(str::to_string));
-            }
             if !t.text.trim().is_empty() {
                 lines.extend(t.text.lines().map(str::to_string));
             }
@@ -152,5 +146,19 @@ mod tests {
         assert!(lines.contains(&"list everything".to_string()));
         assert!(lines.contains(&"alt: exa -la".to_string()));
         assert!(lines.contains(&"ls -la".to_string()));
+    }
+
+    #[test]
+    fn text_response_lines_exclude_meta_explanation() {
+        let response = AssistantResponse::Text(TextResponse {
+            plugin: "interesting".into(),
+            text: "The actual answer.".into(),
+            explanation: "A concise description of the answer.".into(),
+            needs: None,
+        });
+
+        let lines = response_lines(&response);
+
+        assert_eq!(lines, vec!["The actual answer.".to_string()]);
     }
 }

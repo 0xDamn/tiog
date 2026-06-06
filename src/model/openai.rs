@@ -33,7 +33,11 @@ pub async fn suggest(cfg: &Config, question: &str, context: &str) -> Result<Sugg
         );
     }
 
-    let system = format!("{}\n\n{}", prompt::SYSTEM, prompt::JSON_FORMAT);
+    let system = format!(
+        "{}\n\n{}",
+        prompt::command_system(&cfg.behavior.output_language),
+        prompt::JSON_FORMAT
+    );
     let body = json!({
         "model": cfg.model.name,
         "messages": [
@@ -96,14 +100,15 @@ pub async fn text_plugin(
     question: &str,
     context: &str,
 ) -> Result<TextResponse> {
+    let temperature = crate::model::text_plugin_temperature(plugin_name);
     let body = json!({
         "model": cfg.model.name,
         "messages": [
-            { "role": "system", "content": prompt::text_plugin_system(&plugin.system_prompt) },
-            { "role": "user", "content": prompt::text_plugin_user_message(question, context) }
+            { "role": "system", "content": prompt::text_plugin_system(&plugin.system_prompt, &cfg.behavior.output_language) },
+            { "role": "user", "content": prompt::text_plugin_user_message(plugin_name, question, context) }
         ],
         "response_format": { "type": "json_object" },
-        "temperature": 0
+        "temperature": temperature
     });
 
     let mut response =

@@ -147,10 +147,14 @@ fn resolve_decision(
             request: original_request.to_string(),
         };
     }
-    let request = if decision.normalized_request.trim().is_empty() {
-        original_request.to_string()
-    } else {
+    let uses_conversation = cfg
+        .plugin(&decision.plugin)
+        .is_some_and(|plugin| plugin.include_conversation);
+    let normalized_request = decision.normalized_request.trim();
+    let request = if !uses_conversation && !normalized_request.is_empty() {
         decision.normalized_request
+    } else {
+        original_request.to_string()
     };
     SelectedPlugin {
         name: decision.plugin,
@@ -209,19 +213,46 @@ mod tests {
     }
 
     #[test]
-    fn valid_high_confidence_plugin_is_selected() {
+    fn conversation_plugin_keeps_original_request() {
         let cfg = Config::default();
         let decision = RouteDecision {
             plugin: "translator".into(),
             confidence: 0.9,
-            reason: String::new(),
-            normalized_request: "Translate hello into Chinese".into(),
+            reason: "translation follow-up".into(),
+            normalized_request: "Translate the request into Chinese".into(),
         };
 
-        let selected = resolve_decision(&cfg, decision, "command", "hello Chinese");
+        let selected = resolve_decision(&cfg, decision, "command", "pls translate it into Chinese");
 
         assert_eq!(selected.name, "translator");
-        assert_eq!(selected.request, "Translate hello into Chinese");
+        assert_eq!(selected.request, "pls translate it into Chinese");
+    }
+
+    #[test]
+    fn context_free_plugin_uses_normalized_request() {
+        let mut cfg = Config::default();
+        cfg.plugins.insert(
+            "formatter".into(),
+            Plugin {
+                description: "Format context-free text.".into(),
+                output: "text".into(),
+                include_context: false,
+                include_conversation: false,
+                system_prompt: "Format text.".into(),
+                builtin: false,
+            },
+        );
+        let decision = RouteDecision {
+            plugin: "formatter".into(),
+            confidence: 0.9,
+            reason: String::new(),
+            normalized_request: "Format hello as title case".into(),
+        };
+
+        let selected = resolve_decision(&cfg, decision, "command", "hello title case");
+
+        assert_eq!(selected.name, "formatter");
+        assert_eq!(selected.request, "Format hello as title case");
     }
 
     #[test]

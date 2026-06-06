@@ -57,3 +57,22 @@ pub async fn text_plugin(
         ),
     }
 }
+
+pub fn text_plugin_temperature(plugin_name: &str) -> f32 {
+    if plugin_name == "interesting" {
+        0.9
+    } else {
+        0.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn interesting_plugin_uses_sampling_temperature() {
+        assert_eq!(text_plugin_temperature("interesting"), 0.9);
+        assert_eq!(text_plugin_temperature("translator"), 0.0);
+    }
+}

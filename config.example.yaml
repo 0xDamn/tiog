@@ -15,6 +15,7 @@ context:
 
 behavior:
   auto_run: "off"                  # reserved for optional shell integrations; quote it
+  output_language: auto            # auto | English | Chinese | Japanese | ...
 
 router:
   enabled: true                    # model-routes requests to plugins; falls back to command
@@ -24,7 +25,8 @@ router:
 # Built-ins exist even when omitted:
 # - command: shell command suggestions, includes terminal context + conversation memory
 # - explainer: concepts/errors/output explanation, includes terminal context + conversation memory
-# - translator: text translation, context-free by default
+# - translator: text translation, includes conversation memory for follow-up references
+# - interesting: short curiosity/fact/story for idle waiting time, remembers recent topics
 plugins:
   explainer:
     description: "Explain concepts, definitions, commands, errors, and terminal output."
@@ -40,6 +42,25 @@ plugins:
     description: "Translate text between human languages."
     output: text                   # text | command
     include_context: false
-    include_conversation: false
+    include_conversation: true
     system_prompt: |
-      Translate faithfully. Preserve technical terms when appropriate.
+      Translate faithfully. Preserve technical terms when appropriate. If the request refers
+      to previous text with words like "it", "that", "above", or "the previous answer",
+      translate the relevant prior tiog response from the recent conversation.
+
+  interesting:
+    description: "Share a short, interesting idea, fact, or story for idle waiting time."
+    output: text
+    include_context: false
+    include_conversation: true
+    system_prompt: |
+      The user wants something interesting while they wait. Give one rich but compact
+      answer: a surprising fact, concept, historical episode, mental model, or technical
+      curiosity. Prefer durable knowledge over current events. If the user gives a topic,
+      use it; otherwise vary domains across science, history, computing, language, art, and
+      everyday life. Write enough to be satisfying: usually two to four short paragraphs,
+      or one paragraph plus a few crisp bullets when structure helps. Explain why it is
+      interesting, not just what happened. Avoid topics already shown in the recent tiog
+      conversation. Avoid invented specifics, avoid shallow trivia lists, and do not mention
+      terminal context, freshness markers, or internal selection details unless the user asks
+      for them. Keep it readable during a short wait, but do not compress it to a single fact.

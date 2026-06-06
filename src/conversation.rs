@@ -194,15 +194,28 @@ pub fn recent() -> Option<String> {
     let start = all.len().saturating_sub(SHOW);
     let mut out = String::from("Recent tiog conversation (this session, oldest first):\n");
     for (i, ex) in all[start..].iter().enumerate() {
-        out.push_str(&format!(
-            "{}. you asked: \"{}\"\n   tiog returned: {} — {}\n",
-            i + 1,
+        out.push_str(&format_exchange(i + 1, ex));
+    }
+    Some(out)
+}
+
+fn format_exchange(index: usize, ex: &Exchange) -> String {
+    if ex.kind == "command" && !ex.explanation.trim().is_empty() {
+        format!(
+            "{}. you asked: \"{}\"\n   tiog returned: {}\n   explanation: {}\n",
+            index,
             ex.q,
             ex.result(),
             ex.explanation
-        ));
+        )
+    } else {
+        format!(
+            "{}. you asked: \"{}\"\n   tiog returned: {}\n",
+            index,
+            ex.q,
+            ex.result()
+        )
     }
-    Some(out)
 }
 
 #[cfg(test)]
@@ -242,5 +255,22 @@ mod tests {
         assert!(!ex.output.contains("Bearer abc"));
         assert!(!ex.command.contains("Bearer abc"));
         assert!(!ex.explanation.contains("ghp_"));
+    }
+
+    #[test]
+    fn recent_omits_text_response_explanation() {
+        let ex = Exchange {
+            q: "I'm bored".into(),
+            plugin: "interesting".into(),
+            kind: "text".into(),
+            output: "A real answer.".into(),
+            command: String::new(),
+            explanation: "A concise meta description.".into(),
+        };
+
+        let out = format_exchange(1, &ex);
+
+        assert!(out.contains("A real answer."));
+        assert!(!out.contains("A concise meta description."));
     }
 }

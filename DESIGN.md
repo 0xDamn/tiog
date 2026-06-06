@@ -15,12 +15,16 @@ tiog --no-context explain tar -xzf
 ```
 
 For command responses, the explanation is printed to stderr and the command is printed to
-stdout. For text responses, the explanation is printed to stderr and the text result is
-printed to stdout. This keeps piping predictable:
+stdout. For text responses, only the text result is printed to stdout in normal output.
+`--json` keeps all structured fields. This keeps piping predictable:
 
 ```sh
 tiog how do I list files by size | pbcopy
 ```
+
+`behavior.output_language` can request a preferred language for user-visible prose. `auto`
+keeps the model's default behavior, and explicit user language requests override the
+preference. Shell commands, flags, paths, code, and other literals remain unchanged.
 
 ## 2. Architecture
 
@@ -50,7 +54,8 @@ Built-in plugins:
 |---|---|---|---|
 | `command` | command | yes | yes |
 | `explainer` | text | yes | yes |
-| `translator` | text | no | no |
+| `translator` | text | no | yes |
+| `interesting` | text | no | yes |
 
 Prompt/config plugins are not executable code. A plugin defines description, output type,
 context policy, conversation policy, and a system prompt:
@@ -61,9 +66,11 @@ plugins:
     description: "Translate text between human languages."
     output: text
     include_context: false
-    include_conversation: false
+    include_conversation: true
     system_prompt: |
-      Translate faithfully. Preserve technical terms when appropriate.
+      Translate faithfully. Preserve technical terms when appropriate. If the request refers
+      to previous text with words like "it", "that", "above", or "the previous answer",
+      translate the relevant prior tiog response from the recent conversation.
 ```
 
 CLI overrides:

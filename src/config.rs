@@ -40,6 +40,7 @@ pub struct ContextCfg {
 #[serde(default)]
 pub struct Behavior {
     pub auto_run: String,
+    pub output_language: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -86,6 +87,7 @@ impl Default for Behavior {
     fn default() -> Self {
         Self {
             auto_run: "off".into(),
+            output_language: "auto".into(),
         }
     }
 }
@@ -195,8 +197,32 @@ terminal-focused explanations. Define jargon before using it."
                 description: "Translate text between human languages.".into(),
                 output: "text".into(),
                 include_context: false,
-                include_conversation: false,
-                system_prompt: "Translate faithfully. Preserve technical terms when appropriate."
+                include_conversation: true,
+                system_prompt: "Translate faithfully. Preserve technical terms when appropriate. \
+If the request refers to previous text with words like \"it\", \"that\", \"above\", or \"the \
+previous answer\", translate the relevant prior tiog response from the recent conversation."
+                    .into(),
+                builtin: true,
+            },
+        ),
+        (
+            "interesting".into(),
+            Plugin {
+                description:
+                    "Share a short, interesting idea, fact, or story for idle waiting time.".into(),
+                output: "text".into(),
+                include_context: false,
+                include_conversation: true,
+                system_prompt: "The user wants something interesting while they wait. Give one \
+rich but compact mini-answer: a surprising fact, concept, historical episode, mental model, or \
+technical curiosity. Prefer durable knowledge over current events. If the user gives a topic, \
+use it; otherwise vary domains across science, history, computing, language, art, and everyday \
+life. Write enough to be satisfying: usually two to four short paragraphs, or one paragraph plus \
+a few crisp bullets when structure helps. Explain why it is interesting, not just what happened. \
+Avoid topics already shown in the recent tiog conversation. Avoid invented specifics, avoid \
+shallow trivia lists, and do not mention terminal context, freshness markers, or internal \
+selection details unless the user asks for them. Keep it readable during a short wait, but do \
+not compress it to a single fact."
                     .into(),
                 builtin: true,
             },
@@ -220,5 +246,47 @@ mod tests {
         assert!(plugin.include_context);
         assert!(plugin.include_conversation);
         assert!(plugin.description.contains("Explain"));
+    }
+
+    #[test]
+    fn translator_builtin_uses_conversation_without_terminal_context() {
+        let plugin = Config::default().plugin("translator").unwrap();
+
+        assert_eq!(plugin.output, "text");
+        assert!(!plugin.include_context);
+        assert!(plugin.include_conversation);
+        assert!(plugin.system_prompt.contains("previous"));
+    }
+
+    #[test]
+    fn interesting_builtin_is_context_free_but_remembers_conversation() {
+        let plugin = Config::default().plugin("interesting").unwrap();
+
+        assert_eq!(plugin.output, "text");
+        assert!(!plugin.include_context);
+        assert!(plugin.include_conversation);
+        assert!(plugin.description.contains("interesting"));
+        assert!(plugin.system_prompt.contains("durable knowledge"));
+    }
+
+    #[test]
+    fn output_language_defaults_to_auto() {
+        let cfg = Config::default();
+
+        assert_eq!(cfg.behavior.output_language, "auto");
+    }
+
+    #[test]
+    fn output_language_loads_from_yaml() {
+        let cfg: Config = serde_yaml::from_str(
+            r#"
+behavior:
+  output_language: Chinese
+"#,
+        )
+        .unwrap();
+
+        assert_eq!(cfg.behavior.output_language, "Chinese");
+        assert_eq!(cfg.behavior.auto_run, "off");
     }
 }
