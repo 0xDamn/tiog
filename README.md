@@ -29,16 +29,79 @@ tiog local state files are written unredacted into Chinese
 
 ## Install
 
-```sh
-# from source (needs a Rust toolchain)
-cargo install --git https://github.com/0xDamn/tiog
+### One-line installer
 
-# …or clone + build
-git clone https://github.com/0xDamn/tiog
-cd tiog && cargo install --path .
+Linux and macOS users can install the latest prebuilt binary with:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/0xDamn/tiog/releases/latest/download/install.sh | sh
 ```
 
-This puts `tiog` on your PATH (in `~/.cargo/bin`).
+The installer writes to `~/.local/bin/tiog` by default. Set `TIOG_INSTALL_DIR` to choose
+another directory:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/0xDamn/tiog/releases/latest/download/install.sh | TIOG_INSTALL_DIR="$HOME/bin" sh
+```
+
+### Prebuilt platforms
+
+Release binaries are published for:
+
+| Platform | Target | Asset | Installer |
+|---|---|---|---|
+| Linux x64 | `x86_64-unknown-linux-gnu` | `.tar.gz` | curl installer |
+| Linux ARM64 | `aarch64-unknown-linux-gnu` | `.tar.gz` | curl installer |
+| macOS Intel | `x86_64-apple-darwin` | `.tar.gz` | curl installer |
+| macOS Apple silicon | `aarch64-apple-darwin` | `.tar.gz` | curl installer |
+| Windows x64 | `x86_64-pc-windows-msvc` | `.zip` | manual download |
+| Windows ARM64 | `aarch64-pc-windows-msvc` | `.zip` | manual download |
+
+### Manual download
+
+Download the matching `tiog-<target>.tar.gz` or `tiog-<target>.zip` plus `checksums.txt`
+from the GitHub release, verify the SHA-256 checksum, then install the binary into a
+directory on your `PATH`.
+
+### From source
+
+Install from GitHub with Cargo:
+
+```sh
+cargo install --git https://github.com/0xDamn/tiog
+```
+
+Or clone and install locally:
+
+```sh
+git clone https://github.com/0xDamn/tiog
+cd tiog
+cargo install --path .
+```
+
+## Quick Start
+
+After installing, configure a model and ask your first question:
+
+```sh
+mkdir -p ~/.config/tiog
+cat > ~/.config/tiog/config.yaml <<'EOF'
+model:
+  provider: anthropic
+  name: claude-sonnet-4-6
+  api_key_env: ANTHROPIC_API_KEY
+EOF
+
+export ANTHROPIC_API_KEY=sk-ant-...
+tiog -- how do I list files by size
+```
+
+Try the text plugins:
+
+```sh
+tiog "I'm bored, tell me something interesting"
+tiog "translate the previous answer into Chinese"
+```
 
 ## Configure a model
 

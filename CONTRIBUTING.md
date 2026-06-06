@@ -34,5 +34,23 @@ Handy while hacking:
 - Respect the safety model: a destructive command must never silently auto-run.
 - Match the surrounding style and comment density.
 
+## Releases
+
+Pushing a `v*` tag runs the release workflow. It builds Linux/macOS `.tar.gz` archives,
+Windows `.zip` archives, publishes `checksums.txt`, and uploads `scripts/install.sh` so
+Unix-like users can install with:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/0xDamn/tiog/releases/latest/download/install.sh | sh
+```
+
+Before tagging, run:
+
+```sh
+cargo fmt --all --check
+cargo clippy --all-targets -- -D warnings
+cargo test --all
+```
+
 By contributing, you agree that your contributions are dual-licensed under
 [MIT](./LICENSE-MIT) OR [Apache-2.0](./LICENSE-APACHE), without additional terms.
