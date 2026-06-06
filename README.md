@@ -14,18 +14,13 @@ What makes it more than a chat wrapper: tiog is **bound to your terminal**. It s
 current directory, recent commands, and (inside tmux) their output — so answers are about
 *your* situation, not generic.
 
-tiog can also route requests to prompt/config plugins. The built-in `command` plugin keeps
-the original command-assistant behavior, `explainer` explains concepts/errors/session output,
-`translator` handles translation requests and follow-up references, and `interesting` gives
-you a short curiosity hit while you wait:
+It is not only for commands. When a build is crawling, another agent is thinking, or you
+just want a quick answer without leaving the shell, tiog can explain what happened,
+translate the last answer, or hand you a small interesting thing to read while you wait:
 
 ```sh
-tiog local state files are written unredacted into Chinese
+tiog "I'm waiting on Codex response, tell me something interesting, NO Programming related, Life is so hard..."
 ```
-
-> ⚠️ **Early days (v0.1).** Works well as a shell-agnostic CLI. Full output capture currently needs
-> tmux; the standalone PTY recorder is deferred (see [Roadmap](#roadmap)). Feedback and PRs
-> welcome.
 
 ## Prerequisites
 
@@ -68,6 +63,9 @@ Release binaries are published for:
 | macOS Apple silicon | `aarch64-apple-darwin` | `.tar.gz` | curl installer |
 | Windows x64 | `x86_64-pc-windows-msvc` | `.zip` | manual download |
 | Windows ARM64 | `aarch64-pc-windows-msvc` | `.zip` | manual download |
+
+> ⚠️ **Windows support is early.** Windows binaries are published, but the project is not
+> fully tested on Windows yet. Please open an issue if you hit rough edges.
 
 ### Manual download
 
@@ -113,6 +111,21 @@ Try the text plugins:
 ```sh
 tiog "I'm bored, tell me something interesting"
 tiog "translate the previous answer into Chinese"
+```
+
+## Optional short alias
+
+If you use tiog often, alias it to `t` in your shell startup file:
+
+```sh
+alias t='tiog'
+```
+
+Then use `t` anywhere you would use `tiog`:
+
+```sh
+t -- how do I list files by size
+t "translate the previous answer into Chinese"
 ```
 
 ## Configure a model
@@ -251,8 +264,15 @@ Architecture and milestone detail live in [DESIGN.md](./DESIGN.md).
 
 ## Contributing
 
-Issues and PRs welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). Keep `cargo test` and
-`cargo clippy --all-targets -- -D warnings` green; `cargo fmt` keeps style consistent.
+Feedback, ideas, suggestions, and bug reports are very welcome in
+[GitHub Issues](https://github.com/0xDamn/tiog/issues). If tiog feels almost right but not
+quite sharp enough for your terminal workflow, please say what felt slow, awkward, missing,
+or surprising.
+
+PRs are welcome too, especially small fixes that polish the tool: clearer output, better
+docs, safer defaults, platform compatibility, plugin prompts, installer behavior, and test
+coverage. See [CONTRIBUTING.md](./CONTRIBUTING.md) before larger changes. Keep `cargo test`
+and `cargo clippy --all-targets -- -D warnings` green; `cargo fmt` keeps style consistent.
 
 ## License
 
