@@ -27,6 +27,18 @@ tiog local state files are written unredacted into Chinese
 > tmux; the standalone PTY recorder is deferred (see [Roadmap](#roadmap)). Feedback and PRs
 > welcome.
 
+## Prerequisites
+
+- Linux, macOS, or Windows.
+- A directory on your `PATH` for the `tiog` binary. The one-line installer uses
+  `~/.local/bin` by default.
+- A model provider account/API key for hosted providers such as Anthropic, OpenAI, or
+  DeepSeek. Local OpenAI-compatible servers such as Ollama do not need an API key.
+- `curl` and `sh` for the Linux/macOS one-line installer.
+- Rust and Cargo only if installing from source.
+- tmux is optional, but currently required for full terminal output capture. Without tmux,
+  tiog still works from recent commands and local context.
+
 ## Install
 
 ### One-line installer
