@@ -27,12 +27,18 @@ router:
 # - explainer: concepts/errors/output explanation, includes terminal context + conversation memory
 # - translator: text translation, includes conversation memory for follow-up references
 # - interesting: short curiosity/fact/story for idle waiting time, remembers recent topics
+#
+# Plugin memory/context switches:
+# - include_context: send terminal/session context such as cwd, files, git state, and tmux/hook
+#   command output. This can still be disabled per request with --no-context.
+# - include_conversation: send recent tiog Q/A memory and record this plugin's response so
+#   follow-ups like "translate the previous answer" or "explain that more" work.
 plugins:
   explainer:
     description: "Explain concepts, definitions, commands, errors, and terminal output."
     output: text
-    include_context: true
-    include_conversation: true
+    include_context: true          # use terminal/session context for errors and command output
+    include_conversation: true     # support follow-ups about previous tiog answers
     system_prompt: |
       Explain clearly and briefly. If the request mentions an error, last command, output,
       or session state, use the provided terminal context. Prefer practical terminal-focused
@@ -41,8 +47,8 @@ plugins:
   translator:
     description: "Translate text between human languages."
     output: text                   # text | command
-    include_context: false
-    include_conversation: true
+    include_context: false         # translation normally should not need terminal context
+    include_conversation: true     # lets "translate the previous answer" work
     system_prompt: |
       Translate faithfully. Preserve technical terms when appropriate. If the request refers
       to previous text with words like "it", "that", "above", or "the previous answer",
@@ -51,8 +57,8 @@ plugins:
   interesting:
     description: "Share a short, interesting idea, fact, or story for idle waiting time."
     output: text
-    include_context: false
-    include_conversation: true
+    include_context: false         # no terminal context needed for idle reading
+    include_conversation: true     # avoid repeating recent topics in this tiog session
     system_prompt: |
       The user wants something interesting while they wait. Give one rich but compact
       answer: a surprising fact, concept, historical episode, mental model, or technical
