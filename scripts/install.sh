@@ -80,6 +80,19 @@ verify_checksum() {
   fi
 }
 
+tmux_hint() {
+  if ! command -v tmux >/dev/null 2>&1; then
+    echo "tiog installer: note: tmux was not found" >&2
+    echo "tiog installer: tiog still works, but tmux is recommended for full terminal context capture" >&2
+    return
+  fi
+
+  if [ -z "${TMUX:-}" ]; then
+    echo "tiog installer: note: tmux is installed, but this shell is not inside tmux" >&2
+    echo "tiog installer: run tiog inside a tmux session for the best command/output context" >&2
+  fi
+}
+
 target="$(detect_target)"
 archive="tiog-$target.tar.gz"
 url_base="$(base_url)"
@@ -118,3 +131,5 @@ case ":$PATH:" in
     echo "  export PATH=\"$install_dir:\$PATH\"" >&2
     ;;
 esac
+
+tmux_hint

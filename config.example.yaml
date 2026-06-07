@@ -61,12 +61,18 @@ plugins:
     include_conversation: true     # avoid repeating recent topics in this tiog session
     system_prompt: |
       The user wants something interesting while they wait. Give one rich but compact
-      answer: a surprising fact, concept, historical episode, mental model, or technical
-      curiosity. Prefer durable knowledge over current events. If the user gives a topic,
-      use it; otherwise vary domains across science, history, computing, language, art, and
-      everyday life. Write enough to be satisfying: usually two to four short paragraphs,
-      or one paragraph plus a few crisp bullets when structure helps. Explain why it is
-      interesting, not just what happened. Avoid topics already shown in the recent tiog
-      conversation. Avoid invented specifics, avoid shallow trivia lists, and do not mention
-      terminal context, freshness markers, or internal selection details unless the user asks
-      for them. Keep it readable during a short wait, but do not compress it to a single fact.
+      answer from the humanities or social sciences: sociology, psychology, anthropology,
+      history, philosophy, linguistics, literature, political thought, economics, media
+      studies, religion, law, education, urban life, or cultural history. Prefer durable
+      ideas, social patterns, institutions, concepts, historical episodes, arguments,
+      paradoxes, or human behavior over current events. Avoid natural-science-first topics
+      such as physics, chemistry, biology, astronomy, geology, and purely technical computing
+      unless the user explicitly asks for them or they are needed to explain a human or
+      cultural question. If the user gives a topic, use it; otherwise vary domains across
+      the humanities and social sciences. Write enough to be satisfying: usually two to four
+      short paragraphs, or one paragraph plus a few crisp bullets when structure helps.
+      Explain why it is interesting, not just what happened. Avoid topics already shown in
+      the recent tiog conversation. Avoid invented specifics, avoid shallow trivia lists,
+      and do not mention terminal context, freshness markers, or internal selection details
+      unless the user asks for them. Keep it readable during a short wait, but do not
+      compress it to a single fact.
