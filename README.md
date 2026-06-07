@@ -22,18 +22,6 @@ translate the last answer, or hand you a small interesting thing to read while y
 tiog "I'm waiting on Codex response, tell me something interesting, NO Programming related, Life is so hard..."
 ```
 
-## Prerequisites
-
-- Linux, macOS, or Windows.
-- A directory on your `PATH` for the `tiog` binary. The one-line installer uses
-  `~/.local/bin` by default.
-- A model provider account/API key for hosted providers such as Anthropic, OpenAI, or
-  DeepSeek. Local OpenAI-compatible servers such as Ollama do not need an API key.
-- `curl` and `sh` for the Linux/macOS one-line installer.
-- Rust and Cargo only if installing from source.
-- tmux is optional, but currently required for full terminal output capture. Without tmux,
-  tiog still works from recent commands and local context.
-
 ## Install
 
 ### One-line installer
@@ -50,6 +38,22 @@ another directory:
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/0xDamn/tiog/releases/latest/download/install.sh | TIOG_INSTALL_DIR="$HOME/bin" sh
 ```
+
+### Uninstall
+
+Remove a binary installed by the one-line installer:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/0xDamn/tiog/releases/latest/download/uninstall.sh | sh
+```
+
+If you installed into a custom directory, pass the same `TIOG_INSTALL_DIR`:
+
+```sh
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/0xDamn/tiog/releases/latest/download/uninstall.sh | TIOG_INSTALL_DIR="$HOME/bin" sh
+```
+
+The uninstaller removes only the `tiog` binary. Your config and local state are left alone.
 
 ### Prebuilt platforms
 
@@ -237,8 +241,8 @@ which returns a structured `{command, explanation, risk}`.
 
 | Source | Sees output? | Needs |
 |---|---|---|
-| `tmux` | ✅ real scrollback (`capture-pane`) | being inside tmux |
-| `hooks` | ❌ commands + exit codes | `$TIOG_SESSION_LOG` in `exit<TAB>cwd<TAB>command` format |
+| `tmux` | real scrollback (`capture-pane`) | being inside tmux |
+| `hooks` | commands + exit codes | `$TIOG_SESSION_LOG` in `exit<TAB>cwd<TAB>command` format |
 | `auto` *(default)* | best available | — |
 
 Inspect the command plugin's terminal context, with no API call:
@@ -256,9 +260,9 @@ tiog --show-context
 
 ## Roadmap
 
-- ✅ Multi-provider queries · routed prompt plugins · tmux/hooks context · redaction · safety.
-- ⏸ **PTY session recorder** — full output capture outside tmux (`pty` source is a placeholder).
-- ◻ Streaming output · follow-up/refine · optional shell integrations · `tiog init` installer.
+- Multi-provider queries · routed prompt plugins · tmux/hooks context · redaction · safety.
+- **PTY session recorder** — full output capture outside tmux (`pty` source is a placeholder).
+- Streaming output · follow-up/refine · optional shell integrations · `tiog init` installer.
 
 Architecture and milestone detail live in [DESIGN.md](./DESIGN.md).
 
