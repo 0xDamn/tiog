@@ -169,6 +169,8 @@ model:
   name: llama3.1
   base_url: http://localhost:11434/v1
   api_key_env: UNUSED
+  timeout_secs: 180        # raise for slow local models / large prompts (default 120)
+  disable_thinking: true   # reasoning models (e.g. Qwen3): skip thinking to stay responsive
 ```
 </details>
 

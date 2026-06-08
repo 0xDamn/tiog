@@ -33,7 +33,7 @@ pub async fn suggest(cfg: &Config, question: &str, context: &str) -> Result<Sugg
     });
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(60))
+        .timeout(Duration::from_secs(cfg.model.timeout_secs))
         .build()
         .context("building HTTP client")?;
 
@@ -124,7 +124,7 @@ where
         .unwrap_or_else(|| DEFAULT_URL.to_string());
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(60))
+        .timeout(Duration::from_secs(cfg.model.timeout_secs))
         .build()
         .context("building HTTP client")?;
 

@@ -7,6 +7,8 @@ model:
   name: claude-sonnet-4-6
   api_key_env: ANTHROPIC_API_KEY   # tiog reads your key from THIS env var, never the file
   base_url: null                   # required for openai-compatible (e.g. DeepSeek, Ollama)
+  timeout_secs: 120                # HTTP timeout; raise for slow local models (Ollama, etc.)
+  disable_thinking: false          # set true for reasoning models (Qwen3, etc.) via Ollama
 
 context:
   source: auto                     # auto | tmux | hooks

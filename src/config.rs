@@ -26,6 +26,13 @@ pub struct Model {
     pub name: String,
     pub api_key_env: String,
     pub base_url: Option<String>,
+    /// HTTP request timeout in seconds. Local models (e.g. Ollama) with large prompts can
+    /// be much slower than hosted APIs, so this is generous by default and overridable.
+    pub timeout_secs: u64,
+    /// Send `think: false` to the model (Ollama-compatible). Reasoning models (e.g. Qwen3)
+    /// otherwise spend most of their tokens thinking before emitting the JSON tiog needs,
+    /// which is far too slow for interactive use. Ignored by the anthropic provider.
+    pub disable_thinking: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -69,6 +76,8 @@ impl Default for Model {
             name: "claude-sonnet-4-6".into(),
             api_key_env: "ANTHROPIC_API_KEY".into(),
             base_url: None,
+            timeout_secs: 120,
+            disable_thinking: false,
         }
     }
 }

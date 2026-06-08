@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format loosely foll
 
 ## [Unreleased]
 
+### Added
+- `timeout_secs` model option: HTTP request timeout is now configurable (default 120s) instead
+  of a fixed 60s, so slow local models (e.g. Ollama with large prompts) no longer time out.
+- `disable_thinking` model option: when set, the OpenAI-compatible provider sends
+  `reasoning_effort: "none"` so reasoning models (e.g. Qwen3 via Ollama) skip thinking and stay
+  responsive interactively. Ignored by the Anthropic provider.
+
+### Fixed
+- Text-plugin replies from smaller local/open models are parsed tolerantly: off-schema keys or
+  bare prose now fall back to the most answer-like field instead of failing the request.
+
 ## [0.1.1] - 2026-06-06
 
 ### Added
